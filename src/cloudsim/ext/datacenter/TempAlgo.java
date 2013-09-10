@@ -35,9 +35,13 @@ public class TempAlgo extends VmLoadBalancer implements CloudSimEventListener {
     private Iterator<Integer> availableVms = null;
     private DatacenterController dcc;
     private boolean sorted = false;
-    private static int currentVM;
+    private int currentVM;
     private static boolean calledOnce = false;
-    private static boolean indexChanged = false;
+    private boolean indexChanged = false;
+    
+    private Map<String,LinkedList<AlgoAttr>> algoMap = new HashMap<String, LinkedList<AlgoAttr>>();
+    private Map<String,AlgoHelper> map = new HashMap<String,AlgoHelper>();  
+    private Map<String,Integer> vmCountMap = new HashMap<String,Integer>();
     
     public TempAlgo(DatacenterController dcb) {
         confMap = DepConfList.dcConfMap;
@@ -58,50 +62,54 @@ public class TempAlgo extends VmLoadBalancer implements CloudSimEventListener {
                 Temp_Algo_Static_Var.algoMap.put(dataCenter, tmpList);
                 Temp_Algo_Static_Var.vmCountMap.put(dataCenter, totalVms);
             }
+            this.algoMap = Temp_Algo_Static_Var.algoMap;
+            this.vmCountMap = Temp_Algo_Static_Var.vmCountMap;
+            this.map = Temp_Algo_Static_Var.map;
         }
     }
     
     @Override
     public int getNextAvailableVm() {
         synchronized(this) {
-            System.out.println(Thread.currentThread().getName() + " " + this);
+           // System.out.println(Thread.currentThread().getName() + " " + this);
             //try {Thread.sleep(100000000);}catch(Exception exc){System.out.println("In the exception block");}
-            String dataCenter = dcc.getDataCenterName();
-            int totalVMs = Temp_Algo_Static_Var.vmCountMap.get(dataCenter);
-            AlgoHelper ah = (AlgoHelper)Temp_Algo_Static_Var.map.get(dataCenter);
+            System.out.println("~~~Inside the method~~~");
+            String dataCenter = this.dcc.getDataCenterName();
+            int totalVMs = this.vmCountMap.get(dataCenter);
+            AlgoHelper ah = (AlgoHelper)this.map.get(dataCenter);
             int lastIndex = ah.getIndex();
             int lastCount = ah.getLastCount();
-            LinkedList<AlgoAttr> list = Temp_Algo_Static_Var.algoMap.get(dataCenter);
+            LinkedList<AlgoAttr> list = this.algoMap.get(dataCenter);
             AlgoAttr aAtr = (AlgoAttr)list.get(lastIndex);
-            TempAlgo.indexChanged = false;
+            indexChanged = false;
             if(lastCount < totalVMs)  {
                 if(aAtr.getRequestAllocated() % aAtr.getWeightCount() == 0) {
                     lastCount = lastCount + 1;
-                    TempAlgo.currentVM = lastCount;
+                    this.currentVM = lastCount;
                     if(aAtr.getRequestAllocated() == aAtr.getVmCount() * aAtr.getWeightCount()) {
                         lastIndex++;
                         if(lastIndex != list.size()) {
                             AlgoAttr aAtr_N = (AlgoAttr)list.get(lastIndex);
                             aAtr_N.setRequestAllocated(1);
-                            TempAlgo.indexChanged = true;
+                            this.indexChanged = true;
                         }
                         if(lastIndex == list.size()) {
                             lastIndex = 0;
                             lastCount = -1;
-                            TempAlgo.currentVM = 0;
+                            this.currentVM = 0;
                             AlgoAttr aAtr_N = (AlgoAttr)list.get(lastIndex);
                             aAtr_N.setRequestAllocated(0);
-                            TempAlgo.indexChanged = true;
+                            this.indexChanged = true;
 
                         }
                     }
                 }
-                if(!TempAlgo.indexChanged) {
+                if(!this.indexChanged) {
                     aAtr.setRequestAllocated(aAtr.getRequestAllocated() + 1);
                 }
-                System.out.println("@@CurrVM : " + TempAlgo.currentVM + " " + dataCenter);
-                Temp_Algo_Static_Var.map.put(dataCenter, new AlgoHelper(lastIndex, lastCount));            
-                return TempAlgo.currentVM;
+                System.out.println("@@CurrVM : " + currentVM + " " + dataCenter);
+                this.map.put(dataCenter, new AlgoHelper(lastIndex, lastCount));            
+                return this.currentVM;
             }}
 
             System.out.println("--------Before final return statement---------");
