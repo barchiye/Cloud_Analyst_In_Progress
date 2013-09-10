@@ -36,7 +36,7 @@ public class TempAlgo extends VmLoadBalancer implements CloudSimEventListener {
     private DatacenterController dcc;
     private boolean sorted = false;
     private int currentVM;
-    private static boolean calledOnce = false;
+    private boolean calledOnce = false;
     private boolean indexChanged = false;
     
     private Map<String,LinkedList<AlgoAttr>> algoMap = new HashMap<String, LinkedList<AlgoAttr>>();
@@ -47,8 +47,8 @@ public class TempAlgo extends VmLoadBalancer implements CloudSimEventListener {
         confMap = DepConfList.dcConfMap;
         this.dcc = dcb;
         dcc.addCloudSimEventListener(this);
-        if(!calledOnce) {
-            calledOnce = true;
+        if(!this.calledOnce) {
+            this.calledOnce = true;
             // Make a new map using dcConfMap that lists 'DataCenter' as a 'key' and 'LinkedList<AlgoAttr>' as 'value'.
             Set<String> keyst =DepConfList.dcConfMap.keySet();
             for(String dataCenter : keyst) {
@@ -62,9 +62,9 @@ public class TempAlgo extends VmLoadBalancer implements CloudSimEventListener {
                 Temp_Algo_Static_Var.algoMap.put(dataCenter, tmpList);
                 Temp_Algo_Static_Var.vmCountMap.put(dataCenter, totalVms);
             }
-            this.algoMap = Temp_Algo_Static_Var.algoMap;
-            this.vmCountMap = Temp_Algo_Static_Var.vmCountMap;
-            this.map = Temp_Algo_Static_Var.map;
+            this.algoMap = new HashMap<String, LinkedList<AlgoAttr>>(Temp_Algo_Static_Var.algoMap);
+            this.vmCountMap = new HashMap<String,Integer>(Temp_Algo_Static_Var.vmCountMap);
+            this.map = new HashMap<String,AlgoHelper>(Temp_Algo_Static_Var.map);
         }
     }
     
